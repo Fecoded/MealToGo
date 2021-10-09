@@ -1,40 +1,70 @@
-import React, { useState } from "react";
+import React, { useContext, useState } from "react";
 import styled from "styled-components/native";
-import { StatusBar, SafeAreaView } from "react-native";
-import { Searchbar } from "react-native-paper";
+import { FlatList, TouchableOpacity } from "react-native";
+import { ActivityIndicator, Colors } from "react-native-paper";
 
 import { RestaurantInfo } from "../components/restaurants-info-card.component";
+import { FavouritesBar } from "../../../components/favourites/favourite-bar.component";
 
-const SafeArea = styled(SafeAreaView)`
-  flex: 1;
-  ${StatusBar.currentHeight && `margin-top: ${StatusBar.currentHeight}px`};
+import { FadeInView } from "../../../components/animations/fade.animations";
+import { SafeArea } from "../../../components/utils/safe-area-component";
+import { RestaurantsContext } from "../../../services/restaurant.context";
+import { FavouritesContext } from "../../../services/favourites/favourites.context";
+import { Search } from "../components/search.component";
+
+export const RestaurantList = styled(FlatList).attrs({
+  contentContainerStyle: { padding: 16 },
+})``;
+
+const Loading = styled(ActivityIndicator)`
+  margin-left: -25px;
 `;
 
-const SearchContainer = styled.View`
-  padding: ${(props) => props.theme.space[3]};
+const LoadingContainer = styled.View`
+  position: absolute;
+  top: 50%;
+  left: 50%;
 `;
 
-const RestaurantListContainer = styled.View`
-  flex: 1;
-  padding: ${(props) => props.theme.space[3]};
-`;
+export const RestaurantScreen = ({ navigation }) => {
+  const { restaurants, isLoading, error } = useContext(RestaurantsContext);
+  const { favourites } = useContext(FavouritesContext);
+  const [isToggle, setIsToggle] = useState(false);
 
-export const RestaurantScreen = () => {
-  const [searchQuery, setSearchQuery] = useState("");
-
-  const onChangeSearch = (query) => setSearchQuery(query);
   return (
     <SafeArea>
-      <SearchContainer>
-        <Searchbar
-          placeholder="Search"
-          onChangeText={onChangeSearch}
-          value={searchQuery}
+      {isLoading && (
+        <LoadingContainer>
+          <Loading size={50} animating={true} color={Colors.blue300} />
+        </LoadingContainer>
+      )}
+      <Search
+        isFavouritesToggle={isToggle}
+        onFavouritesToggle={() => setIsToggle(!isToggle)}
+      />
+      {isToggle && (
+        <FavouritesBar
+          favourites={favourites}
+          onNavigate={navigation.navigate}
         />
-      </SearchContainer>
-      <RestaurantListContainer>
-        <RestaurantInfo />
-      </RestaurantListContainer>
+      )}
+      <RestaurantList
+        data={restaurants}
+        renderItem={({ item }) => {
+          return (
+            <TouchableOpacity
+              onPress={() =>
+                navigation.navigate("RestaurantDetails", { restaurant: item })
+              }
+            >
+              <FadeInView>
+                <RestaurantInfo restaurant={item} />
+              </FadeInView>
+            </TouchableOpacity>
+          );
+        }}
+        keyExtractor={(item) => item.name}
+      />
     </SafeArea>
   );
 };
